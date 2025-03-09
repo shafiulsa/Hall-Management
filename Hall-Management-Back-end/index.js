@@ -1,166 +1,3 @@
-// const express = require('express');
-// const { MongoClient, ServerApiVersion } = require('mongodb');
-// const cors= require('cors');
-// require('dotenv').config();
-// const app = express()
-// const port = process.env.PORT || 5000;
-
-// //StudetDetails
-// //yzlxTD8IwTrvRnkt
-
-// console.log(process.env.DB_USER ,process.env.DB_PASS);
-
-// //mongodb connection
-
-// const uri = `mongodb+srv://${process.env.DB_USER }:${process.env.DB_PASS}@cluster0.a35pwem.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
-// console.log(uri);
-// // Create a MongoClient with a MongoClientOptions object to set the Stable API version
-// const client = new MongoClient(uri, {
-//   serverApi: {
-//     version: ServerApiVersion.v1,
-//     strict: true,
-//     deprecationErrors: true,
-//   }
-// });
-
-// async function run() {
-//   try {
-//     // Connect the client to the server	(optional starting in v4.7)
-//     await client.connect();
-//     // Send a ping to confirm a successful connection
-//     await client.db("admin").command({ ping: 1 });
-//     console.log("Pinged your deployment. You successfully connected to MongoDB!");
-//   } finally {
-//     // Ensures that the client will close when you finish/error
-//     // await client.close();
-//   }
-// }
-// run().catch(console.dir);
-
-
-
-
-
-// //middleware
-// app.use(cors());
-// app.use(express.json());
-
-// app.get('/', (req, res) => {
-//   res.send('basic server is running')
-// })
-
-// app.listen(port, () => {
-//   console.log(`Example app listening on port ${port}`)
-// })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const express = require('express');
-// const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-// const cors = require('cors');
-// require('dotenv').config();
-
-// const app = express();
-// const port = process.env.PORT || 5000;
-
-// // MongoDB connection
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.a35pwem.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
-// const client = new MongoClient(uri, {
-//   serverApi: {
-//     version: ServerApiVersion.v1,
-//     strict: true,
-//     deprecationErrors: true,
-//   }
-// });
-
-// // Middleware
-// app.use(cors());
-// app.use(express.json());
-
-// async function run() {
-//   try {
-//     await client.connect();
-//     console.log("Connected to MongoDB Atlas");
-
-//     const db = client.db("HallManagement");
-//     const seatsCollection = db.collection("Seats");
-
-//     // 🔹 1. Get List of Floors (1 to 5)
-//     app.get('/floors', (req, res) => {
-//       const floors = Array.from({ length: 5 }, (_, i) => ({ floorNumber: i + 1 }));
-//       res.send(floors);
-//     });
-
-//     // 🔹 2. Get List of Rooms in a Floor (1 to 20)
-//     app.get('/rooms/:floorNumber', (req, res) => {
-//       const { floorNumber } = req.params;
-//       const rooms = Array.from({ length: 20 }, (_, i) => ({
-//         floorNumber: parseInt(floorNumber),
-//         roomNumber: i + 1
-//       }));
-//       res.send(rooms);
-//     });
-
-//     // 🔹 3. Get Students in a Room (Seats A, B, C, D)
-//     app.get('/room/:roomNumber', async (req, res) => {
-//       const { roomNumber } = req.params;
-//       const students = await seatsCollection.find({ roomNumber: parseInt(roomNumber) }).toArray();
-//       res.send(students);
-//     });
-
-//     // 🔹 4. Get List of Empty Seats
-//     app.get('/empty-seats', async (req, res) => {
-//       const emptySeats = await seatsCollection.find({ isBooked: false }).toArray();
-//       res.send(emptySeats);
-//     });
-
-//     // 🔹 5. Update Seat (Book a Seat for a Student)
-//     app.put('/update-seat/:seatId', async (req, res) => {
-//       const { seatId } = req.params;
-//       const studentData = req.body;
-
-//       const updateResult = await seatsCollection.updateOne(
-//         { _id: new ObjectId(seatId) },
-//         { $set: { ...studentData, isBooked: true } }
-//       );
-
-//       res.send(updateResult);
-//     });
-
-//   } finally {
-//     // Optional: Keep MongoDB connection open
-//   }
-// }
-
-// run().catch(console.dir);
-
-// // Default Route
-// app.get('/', (req, res) => {
-//   res.send('Hall Management Server is Running');
-// });
-
-// // Start Server
-// app.listen(port, () => {
-//   console.log(`Server running on port ${port}`);
-// });
-
-
-
-
-
 
 const express = require('express');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -184,6 +21,23 @@ const client = new MongoClient(uri, {
   },
 });
 
+// Utility function to normalize the expiryDate format
+const normalizeExpiryDate = (expiryDate) => {
+  if (!expiryDate) return null;
+
+  // Replace multiple hyphens with a single hyphen
+  expiryDate = expiryDate.replace(/-+/g, '-');
+
+  // Split the date into parts
+  const [year, month, day] = expiryDate.split('-');
+
+  // Ensure month and day are two digits
+  const normalizedMonth = month.padStart(2, '0');
+  const normalizedDay = day.padStart(2, '0');
+
+  // Return the normalized date in YYYY-MM-DD format
+  return `${year}-${normalizedMonth}-${normalizedDay}`;
+};
 async function run() {
   try {
     await client.connect();
@@ -191,7 +45,7 @@ async function run() {
 
     const db = client.db("HallManagement");
     const studentsCollection = db.collection("Seats");
-    const expiredCollection = db.collection("expiredStudents");
+    const Alumni = db.collection("Alumni");
 
     // --- API Routes ---
     app.get('/seats', async (req, res) => {
@@ -206,11 +60,11 @@ async function run() {
     // Get rooms by floor
     app.get('/floor/:floorNumber', async (req, res) => {
       const floor = parseInt(req.params.floorNumber);
-      if (floor < 1 || floor > 5) {
+      if (floor < 1 || floor > 6) {
         return res.status(400).json({ message: "Invalid floor number" });
       }
       const rooms = [];
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 26; i++) {
         rooms.push({ roomNumber: floor * 100 + i });
       }
       res.json(rooms);
@@ -229,10 +83,10 @@ async function run() {
       const student = await studentsCollection.findOne({ roomNumber: parseInt(roomNumber), seat });
       res.json(student || {});
     });
- 
     // Update student details
-    app.put('/update/:id', async (req, res) => {
+    app.put("/update/:id", async (req, res) => {
       const { id } = req.params;
+      console.log(id);
       const updatedData = req.body;
       const result = await studentsCollection.updateOne(
         { _id: new ObjectId(id) },
@@ -240,27 +94,240 @@ async function run() {
       );
       res.json(result);
     });
+    const { ObjectId } = require('mongodb');
 
-    // Move expired students to another collection
-    app.get('/expired-students', async (req, res) => {
-      const expiredStudents = await expiredCollection.find().toArray();
-      res.json(expiredStudents);
-    });
 
-    // Mark student as expired (move to another collection)
-    app.delete('/expire/:id', async (req, res) => {
-      const { id } = req.params;
-      const student = await studentsCollection.findOne({ _id: new ObjectId(id) });
-      if (student) {
-        await expiredCollection.insertOne(student);
-        await studentsCollection.deleteOne({ _id: new ObjectId(id) });
-        res.json({ message: "Student moved to expired list" });
-      } else {
-        res.status(404).json({ message: "Student not found" });
+
+    // MongoDB connection URI and Database Setup
+
+
+
+    // Define the GET route with roomNumber and seat as parameters
+    app.get('/room/:roomNumber/:seat', async (req, res) => {
+      try {
+        const { roomNumber, seat } = req.params;
+        console.log(roomNumber, seat)
+
+        // Query MongoDB to find a document by roomNumber and seat
+        const seatData = await studentsCollection.findOne({ roomNumber: parseInt(roomNumber), seat: seat });
+
+        // Check if the seat data is found
+        if (!seatData) {
+          return res.status(404).json({ error: 'Seat not found' });
+        }
+
+        // Return the found seat data as JSON
+        res.json(seatData);
+
+      } catch (error) {
+        console.error('Error fetching seat data:', error);
+        res.status(500).json({ error: 'Internal server error' });
       }
     });
 
-    // Start Server
+
+
+
+
+    app.put('/update-seat/:seatId', async (req, res) => {
+      const { seatId } = req.params;
+      const updatedData = req.body;
+      const updateResult = await studentsCollection.updateOne(
+        { _id: new ObjectId(seatId) },
+        { $set: { student: updatedData, isBooked: true } }
+      );
+      res.json(updateResult);
+    });
+
+
+    app.put('/swap-seats', async (req, res) => {
+      const { seat1Room, seat1Seat, seat2Room, seat2Seat } = req.body;
+      const room1 = parseInt(seat1Room, 10);
+      const room2 = parseInt(seat2Room, 10);
+
+      console.log('Room 1:', room1);
+      console.log('Seat 1:', seat1Seat);
+      console.log('Room 2:', room2);
+      console.log('Seat 2:', seat2Seat);
+
+      try {
+        // Fetch seat data for both seats
+        const seat1 = await studentsCollection.findOne({ roomNumber: room1, seat: seat1Seat });
+        const seat2 = await studentsCollection.findOne({ roomNumber: room2, seat: seat2Seat });
+
+        console.log('Fetched Seat 1:', seat1);
+        console.log('Fetched Seat 2:', seat2);
+
+        if (!seat1 || !seat2) {
+          return res.status(404).json({ success: false, message: 'One or both seats not found.' });
+        }
+
+       
+        const updatedSeat1Data = {
+          ...seat2,       
+          roomNumber: seat1.roomNumber,  
+          seat: seat1.seat,  
+          _id: seat1._id, 
+        };
+
+        const updatedSeat2Data = {
+          ...seat1,          
+          roomNumber: seat2.roomNumber, 
+          seat: seat2.seat,
+          _id: seat2._id,    
+        };
+
+        // Log updated data to verify the changes
+        console.log('Updated Seat 1:', updatedSeat1Data);
+        console.log('Updated Seat 2:', updatedSeat2Data);
+
+        // Perform the update in MongoDB
+        const result1 = await studentsCollection.updateOne(
+          { _id: seat1._id },
+          { $set: updatedSeat1Data }
+        );
+        const result2 = await studentsCollection.updateOne(
+          { _id: seat2._id },
+          { $set: updatedSeat2Data }
+        );
+
+        if (result1.modifiedCount === 0 || result2.modifiedCount === 0) {
+          return res.status(500).json({ success: false, message: 'Failed to update seats.' });
+        }
+
+        res.json({ success: true, message: 'Seats swapped successfully.' });
+      } catch (error) {
+        console.error('Error swapping seats:', error);
+        res.status(500).json({ success: false, message: 'An error occurred while swapping seats.' });
+      }
+    });
+
+
+
+
+
+    app.put('/room/:roomNumber/:seatId', async (req, res) => {
+      const { roomNumber, seatId } = req.params;
+      const updatedData = req.body;
+      if (updatedData._id) {
+        delete updatedData._id;
+      }
+
+      try {
+        console.log(`Room: ${roomNumber}, Seat: ${seatId}`);
+        console.log('Updated Data:', updatedData);
+
+        // Use the correct collection (studentsCollection)
+        const updatedSeat = await studentsCollection.findOneAndUpdate(
+          { roomNumber: parseInt(roomNumber), seat: seatId }, 
+          { $set: updatedData }, 
+          { returnDocument: 'after' }  
+        );
+
+        // // Check if the seat was updated
+        // if (!updatedSeat.value) {
+        //   return res.status(404).json({ message: 'Seat not found' });
+        // }
+
+        // Send the updated seat back in the response
+        res.json(updatedSeat.value);
+      } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message });
+      }
+    });
+
+
+    app.post("/alumni", async (req, res) => {
+      try {
+        const alumniData = req.body; // Get the incoming student data
+        console.log(alumniData);
+
+       
+        const { _id, ...alumniDataWithoutId } = alumniData;
+
+        
+        const result = await Alumni.insertOne(alumniDataWithoutId); 
+        const { roomNumber, seat } = alumniData;
+
+        // Clear all fields except _id, roomNumber, and seat from the Students collection
+        const updateResult = await studentsCollection.updateOne(
+          { _id: alumniData._id },  // Find the student by _id
+          {
+            $set: {
+              name: "",
+              studentId: "",
+              season: "",
+              department: "",
+              fatherName: "",
+              motherName: "",
+              fatherOccupation: "",
+              motherOccupation: "",
+              annualIncome: "",
+              mobileNumber: "",
+              signature: "",
+              timeRemaining: ""
+            },
+            $unset: {
+              yearOrSemester: "",  // Optionally unset fields
+              relativeToTangail: ""
+            }
+          }
+        );
+
+
+        res.send({ message: "Student data successfully moved to alumni and cleared in students collection." });
+      } catch (error) {
+        console.error("Error adding to alumni:", error);
+        res.status(500).json({ message: "Failed to add to alumni and clear data from Students collection" });
+      }
+    });
+
+    // Backend - Express.js route to get all alumni data
+    app.get("/alumni", async (req, res) => {
+      try {
+        // Fetch all alumni data from the Alumni collection
+        const alumniData = await Alumni.find({}).toArray();
+
+        // Send the fetched data back as a JSON response
+        res.json(alumniData);
+      } catch (error) {
+        console.error("Error fetching alumni data:", error);
+        res.status(500).json({ message: "Failed to fetch alumni data" });
+      }
+    });
+
+    
+
+
+app.get("/expired", async (req, res) => {
+  try {
+      // Get the current date
+      const currentDate = new Date();
+
+      // Fetch all seats from the database
+      const seats = await studentsCollection.find().toArray();
+
+      // Filter seats where expiryDate is in the past or season is null
+      const expiredOrInvalidSeats = seats.filter((seat) => {
+          if (!seat.season) return true; 
+
+          if (!seat.expiryDate) return false; 
+       
+          const normalizedExpiryDate = normalizeExpiryDate(seat.expiryDate);
+          const expiryDate = new Date(normalizedExpiryDate);
+          return expiryDate <= currentDate;
+      });
+
+      // Send the filtered seats as the response
+      res.json(expiredOrInvalidSeats);
+  } catch (error) {
+      console.error("Error fetching expired or invalid seats:", error);
+      res.status(500).json({ message: "Failed to fetch expired or invalid seats", error: error.message });
+  }
+});
+
+
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });
@@ -271,7 +338,6 @@ async function run() {
 }
 
 run().catch(console.dir);
-
 
 
 

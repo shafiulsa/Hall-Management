@@ -1,15 +1,3 @@
-
-// const AboutFacilities = () => {
-//     return (
-//         <div>
-//             <h1></h1>
-            
-//         </div>
-//     );
-// };
-
-// export default AboutFacilities;
-
 import { BedDouble, Utensils, Users, ShieldCheck } from "lucide-react";
 
 const facilities = [

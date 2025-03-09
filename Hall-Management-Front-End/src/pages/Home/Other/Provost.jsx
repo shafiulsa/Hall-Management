@@ -11,7 +11,7 @@ style={{ backgroundColor: 'E4E0E1' }}>
       className="max-w-sm rounded-lg shadow-2xl" />
     <div>
       <h1 className="text-5xl font-bold">MESSAGE FROM THE PROVOST</h1>
-      <h3>Prof. Dr.</h3>
+      <h3>Dr. Md. Abu Rashed</h3>
       <p className="py-6">
         Provident cupiditate voluptatem et in. Quaerat fugiat ut assumenda excepturi exercitationem
         quasi. In deleniti eaque aut repudiandae et a id nisi.

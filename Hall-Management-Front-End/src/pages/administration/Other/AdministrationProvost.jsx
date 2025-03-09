@@ -12,7 +12,7 @@ const AdministrationProvost = () => {
                             <img src="../../../public/man.png" alt="provost-pic" />
                         </figure>
                         <div className="card-body">
-                            <h2 className="card-title">Prof.</h2>
+                            <h2 className="card-title">Dr. Md. Abu Rashed</h2>
                             <h3>Provost</h3>
 
                             <small><i>Email: abcd@gmail.com</i></small>
